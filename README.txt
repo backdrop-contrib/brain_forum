@@ -1,4 +1,4 @@
-EADME.txt
+README.txt
 ==========
 
 Brain Forum is an entity-based disucssion forum module for Drupal 7 with 
