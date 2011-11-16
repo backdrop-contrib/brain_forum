@@ -1,4 +1,16 @@
 name = Brain Forum
 description = Provides an entity-based discussion forum with Views integration.
 core = 7.x
+package = Brain Forum
+
 dependencies[] = entity
+dependencies[] = views
+dependencies[] = taxonomy
+
+files[] = views/brain_forum.views.inc
+files[] = views/brain_forum.views_default.inc
+files[] = views/brain_forum_post_handler_field_edit.inc
+files[] = views/brain_forum_post_handler_field_quote.inc
+files[] = views/brain_forum_post_handler_field_reply.inc
+files[] = views/brain_forum_post_handler_filter_status.inc
+files[] = views/brain_forum_thread_handler_filter_status.inc
