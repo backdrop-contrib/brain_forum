@@ -1,0 +1,1006 @@
+<?php
+
+/**
+ * @file
+ * Provides a simple discussion forum based on entities.
+ *
+ * @todo When unpublishing first post in thread, unpublish all posts in thread.
+ * @todo Add admin interface to /content section.
+ * @todo Redirect user to last page of thread after submit.
+ * @todo Move admin functions to separate file.
+ */
+
+/**
+ * Implements hook_entity_info().
+ */
+function brain_forum_entity_info() {
+  $info['post'] = array(
+    // Define module for this entity for Views integration to work.
+    'module' => 'brain_forum',
+    // A human readable label to identify our entity.
+    'label' => t('Forum post'),
+    // The controller for our Entity - Using controller provided by Entity API.
+    'controller class' => 'EntityAPIController',
+    // The table defined in hook_schema().
+    'base table' => 'brain_forum_post',
+    'fieldable' => TRUE,
+    // The unique key of our base table.
+    'entity keys' => array(
+      'id' => 'pid',
+    ),
+    // FALSE disables caching -  caching functionality is handled by Drupal core
+    'static cache' => TRUE,
+    // Attach bundles - i.e. alternative configurations of fields associated with a main entity.
+    'bundles' => array(
+      'post' => array(
+        'label' => 'Post',
+        // Information below is used by the Field UI - they "attach" themselves here and lets us
+        // do the standard field management that all the core entities enjoy.
+        'admin' => array(
+          'path' => 'admin/structure/brain_forum/manage/post',
+          'access arguments' => array('access forum settings'),
+        ),
+      ),
+    ),
+    // The admin ui controller for our Entity - Using controller provided by Entity API.
+    'admin ui' => array(
+      // @todo Find out why 'path' seems to be required for post add form
+      // submission to work.
+      'path' => 'admin/content/posts',
+      //'file' => 'brain_forum.admin.inc',
+      'controller class' => 'EntityDefaultUIController',
+      //'menu wildcard' => '%brain_forum',
+    ),
+  );
+
+  $info['thread'] = array(
+    // Define module for this entity for Views integration to work.
+    'module' => 'brain_forum',
+    // A human readable label to identify our entity.
+    'label' => t('Forum thread'),
+    // The controller for our Entity - Using controller provided by Entity API.
+    'controller class' => 'EntityAPIController',
+    // The table defined in hook_schema()
+    'base table' => 'brain_forum_thread',
+    'fieldable' => TRUE,
+    'bundles' => array(
+      'thread' => array(
+        'label' => 'Thread',
+        // Information below is used by the Field UI - they "attach" themselves here and lets us
+        // do the standard field management that all the core entities enjoy.
+        'admin' => array(
+          'path' => 'admin/structure/brain_forum/manage/thread',
+          'access arguments' => array('access forum settings'),
+        ),
+      ),
+    ),
+    // The unique key of our base table.
+    'entity keys' => array(
+      'id' => 'tid',
+    ),
+    // FALSE disables caching -  caching functionality is handled by Drupal core
+    'static cache' => TRUE,
+    // The admin ui controller for our Entity - Using controller provided by Entity API.
+    'admin ui' => array(
+      'path' => 'admin/content/threads',
+      'controller class' => 'EntityDefaultUIController',
+    ),
+  );
+
+  return $info;
+}
+
+
+/**
+ * Implements hook_entity_property_info_alter().
+ */
+function brain_forum_entity_property_info_alter(&$info) {
+  $post = &$info['post']['properties'];
+  $thread = &$info['thread']['properties'];
+
+  // Alter forum post field mappings.
+  $post['created']['type'] = 'date';
+  $post['created']['label'] = 'Created date';
+  $post['created']['description'] = t('The date the post was created.');
+  $post['changed']['type'] = 'date';
+  $post['changed']['label'] = 'Updated date';
+  $post['changed']['description'] = t('The date the post was last updated.');
+
+  // Alter forum thread field mappings.
+  $thread['created']['type'] = 'date';
+  $thread['created']['label'] = 'Created date';
+  $thread['created']['description'] = t('The date the thread was created.');
+  $thread['last_time']['type'] = 'date';
+  $thread['last_time']['label'] = 'Last post date';
+  $thread['last_time']['description'] = t('Date of when the last post was created.');
+  $thread['last_name']['label'] = 'Last post author';
+  $thread['last_name']['description'] = t('The name of the author of the last post.');
+  $thread['last_uid']['label'] = 'Last post uid';
+  $thread['last_uid']['description'] = t('The uid of the author of the last post.');
+
+}
+
+
+/**
+ * Implements hook_help().
+ *
+ * @todo Improve help text.
+ */
+function brain_forum_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#brain_forum':
+      return "<p>" . t('Once you have activated the module you can configure forum posts and threads by visiting "admin/structure/brain_forum/"') . "</p>";
+  }
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function brain_forum_menu() {
+  $items['admin/structure/brain_forum'] = array(
+    'title' => 'Brain forum',
+    'description' => 'Configure Brain Forum',
+    'page callback' => 'brain_forum_admin_page',
+    'access arguments' => array('access forum settings'),
+  );
+
+  // This provides a place for Field API to hang its own
+  // interface and has to be the same as what was defined
+  // in brain_forum_entity_info() above.
+  $items['admin/structure/brain_forum/manage/post'] = array(
+    'title' => 'Post',
+    'description' => 'Manage Post Entities Structure',
+    'page callback' => 'brain_forum_post_admin_page',
+    'access arguments' => array('access forum settings'),
+  );
+
+  $items['admin/structure/brain_forum/manage/thread'] = array(
+    'title' => 'Thread',
+    'description' => 'Manage Thread Entities Structure',
+    'page callback' => 'brain_forum_thread_admin_page',
+    'access arguments' => array('access forum settings'),
+  );
+
+  // This defines a place for us to add new threads.
+  $items['forum/thread/add'] = array(
+    'title' => 'Start a new forum thread',
+    'page callback' => 'brain_forum_post_add_page',
+    'access arguments' => array('create forum threads'),
+  );
+
+  // This defines a place for us to edit posts.
+  // The wildcard needs a matching function to load the entity.
+  // The function should be named {WILDCARD}_load().
+  $items['forum/post/%post/edit'] = array(
+    'title' => 'Edit post',
+    'page callback' => 'brain_forum_post_edit_page',
+    'page arguments' => array(2),
+    'access arguments' => array('edit forum posts'),
+  );
+
+  // This defines a place for us to delete post entities
+  $items['forum/post/%post/delete'] = array(
+    'title' => 'Delete post',
+    'page callback' => 'brain_forum_post_delete_page',
+    'page arguments' => array(2),
+    'access arguments' => array('delete forum posts'),
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implements hook_permission().
+ *
+ * If using permissions while building views, remember to add any modifications
+ * made here also to brain_forum_views_query_substitutions() in
+ * views/brain_forum.views.inc
+ */
+function brain_forum_permission() {
+    return array(
+    'access forum settings' =>  array(
+      'title' => t('Access forum settings'),
+      'description' => t('Access forum admin page(s).'),
+      'restrict access' => TRUE,
+    ),
+    'administer forum threads' =>  array(
+      'title' => t('Administer forum threads'),
+      'description' => t('View, edit and delete all forum threads and their replies.'),
+      'restrict access' => TRUE,
+    ),
+    'administer forum posts' =>  array(
+      'title' => t('Administer forum posts'),
+      'description' => t('View, edit and delete all forum posts. Exception: cannot delete first post in a thread, need permission "Administer forum threads" to do that.'),
+      'restrict access' => TRUE,
+    ),
+    'view forum thread list' => array(
+      'title' => t('View forum thread list'),
+      'description' => t('View summary list of all forum threads.'),
+    ),
+    'view forum threads' => array(
+      'title' => t('View forum threads'),
+      'description' => t("View an entire forum thread and all it's posts"),
+    ),
+    'create forum threads' => array(
+      'title' => t('Create forum threads'),
+      'description' => t('Start a new forum thread.'),
+    ),
+    'delete forum threads' => array(
+      'title' => t('Delete forum threads'),
+      'description' => t('Delete entire forum threads and all their replies.'),
+    ),
+    'move forum threads' => array(
+      'title' => t('Move forum threads'),
+      'description' => t('Move an entire forum thread to another forum.'),
+    ),
+    'create forum posts' => array(
+      'title' => t('Create forum posts'),
+      'description' => t('Add a reply to an existing forum thread.')
+    ),
+    'edit forum posts' => array(
+      'title' => t('Edit forum posts'),
+    ),
+    'delete forum posts' => array(
+      'title' => t('Delete forum posts'),
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_theme().
+ *
+ * @todo Create custom template for the forum with predefined css.
+ */
+function brain_forum_theme() {
+  $theme = array(
+    'views_view__forum_thread' => array(
+      'template' => 'views-view--forum-thread',
+      'base hook' => 'views_view',
+      'path' => drupal_get_path('module', 'brain_forum'),
+    ),
+  );
+
+  return $theme;
+}
+
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function brain_forum_views_pre_render(&$view) {
+  if ($view->name == 'forum_thread' && !empty($view->result)) {
+    // Get post pid of first post in the thread.
+    $first_pid = $view->result[0]->pid;
+
+    if ($view->args) {
+      // Get thread tid of the current thread.
+      $tid = intval($view->args[0]);
+
+      // Load current thread object.
+      $thread = thread_load($tid);
+
+      // Increment number of views in the thread by 1.
+      // @todo Save a user's view in a session variable to get more accurate
+      //   results.
+      $thread->views++;
+
+      // Load first post object to use when calling brain_forum_post_add_page().
+      $first_post = post_load($first_pid);
+
+      // Attach reply form to view if viewing last page of the view.
+      $last_page = $last_page = $GLOBALS['pager_total'][0]-1;
+      if (pager_find_page() == $last_page && user_access('create forum posts')) {
+        $view->attachment_after = drupal_render(brain_forum_post_add_page($first_post));
+      }
+
+      // Save the thread object.
+      entity_save('thread', $thread);
+    }
+  }
+}
+
+
+/**
+ * Fetches a post object.
+ *
+ * Make sure that the wildcard you choose in the post entity definition fits
+ * the function name here. hook_menu() uses this function whenever the wildcard
+ * appears in the URL.
+ *
+ * @param $pid
+ *   Integer specifying the post entity id.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset. Defaults
+ *   to FALSE.
+ *
+ * @return
+ *   A fully-loaded post object or FALSE if it cannot be loaded.
+ *
+ * @see post_load_multiple()
+ */
+function post_load($pid = NULL, $reset = FALSE) {
+  $pids = (isset($pid) ? array($pid) : array());
+  $post = post_load_multiple($pids, $reset);
+  return $post ? reset($post) : FALSE;
+}
+
+
+/**
+ * Loads multiple post objects.
+ *
+ * @param $pids
+ *   An array of post pids, or FALSE to load all posts.
+ * @param $conditions
+ *   (deprecated) An associative array of conditions on the base table, where
+ *   the keys are the database fields and the values are the values those
+ *   fields must have. Instead, it is preferable to use EntityFieldQuery to
+ *   retrieve a list of entity IDs loadable by this function.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset. Defaults
+ *   to FALSE.
+ *
+ * @return
+ *   An array of post objects indexed by their ids. When no results are found,
+ *   an empty array is returned.
+ *
+ * @see entity_load()
+ */
+function post_load_multiple($pids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('post', $pids, $conditions, $reset);
+}
+
+
+/**
+ * Fetches a thread object.
+ *
+ * Make sure that the wildcard you choose in the thread entity definition fits
+ * the function name here. hook_menu() uses this function whenever the wildcard
+ * appears in the URL.
+ *
+ * @param $pid
+ *   Integer specifying the thread entity id.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset. Defaults
+ *   to FALSE.
+ *
+ * @return
+ *   A fully-loaded thread object or FALSE if it cannot be loaded.
+ *
+ * @see thread_load_multiple()
+ */
+function thread_load($pid = NULL, $reset = FALSE) {
+  $pids = (isset($pid) ? array($pid) : array());
+  $thread = thread_load_multiple($pids, $reset);
+  return $thread ? reset($thread) : FALSE;
+}
+
+
+/**
+ * Loads multiple thread objects.
+ *
+ * @param $pids
+ *   An array of thread pids, or FALSE to load all threads.
+ * @param $conditions
+ *   (deprecated) An associative array of conditions on the base table, where
+ *   the keys are the database fields and the values are the values those
+ *   fields must have. Instead, it is preferable to use EntityFieldQuery to
+ *   retrieve a list of entity IDs loadable by this function.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset. Defaults
+ *   to FALSE.
+ *
+ * @return
+ *   An array of thread objects indexed by their ids. When no results are found,
+ *   an empty array is returned.
+ *
+ * @see entity_load()
+ */
+function thread_load_multiple($pids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('thread', $pids, $conditions, $reset);
+}
+
+
+function brain_forum_admin_page() {
+  $output = '<p>This is the admin page to manage the Brain Forum settings.</p>';
+
+  return $output;
+}
+
+
+/**
+ * Just provide some post info for the entity administration page.
+ * This can be expanded to add more information / a list of all created entites, etc.
+ */
+function brain_forum_post_admin_page() {
+  $output = '<p>This is the admin page to manage the Brain Forum Post Entity.</p>';
+
+  $output .= l('Add forum post', 'forum/thread/add');
+
+  return $output;
+}
+
+
+function brain_forum_thread_admin_page() {
+  $output = '<p>This is the admin page to manage the Brain Forum Thread Entity.</p>';
+
+  return $output;
+}
+
+
+/**
+ * Implements hook_views_api().
+ */
+function brain_forum_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'brain_forum') . '/views',
+  );
+}
+
+
+/**
+ * Calls form to add new post or thread.
+ *
+ * @param $post
+ *   (optional) The post object to fetch thread tid from if replying to a
+ *   thread. Usually the first post in a thread. Defaults to NULL.
+ *
+ * @see brain_forum_post_add_form()
+ */
+function brain_forum_post_add_page($post = NULL) {
+  // Save the thread tid if one is provided.
+  $tid = isset($post) ? $post->tid : NULL;
+  // If thread tid is not provided, this is the first post in a new thread.
+  $is_first = isset($tid) ? 0 : 1;
+  // Create the post object.
+  $post = entity_create('post', array('tid' => $tid, 'is_first' => $is_first));
+
+  return drupal_get_form('brain_forum_post_add_form', $post);
+}
+
+
+/**
+ * Calls form to edit post.
+ *
+ * @param $post
+ *   The post object to edit.
+ *
+ * @see brain_forum_post_add_form()
+ */
+function brain_forum_post_edit_page($post) {
+  return drupal_get_form('brain_forum_post_add_form', $post);
+}
+
+
+/**
+ * Calls form to delete post.
+ *
+ * @param $post
+ *   The post object to delete.
+ *
+ * @see brain_forum_post_delete_form()
+ */
+function brain_forum_post_delete_page($post) {
+  return drupal_get_form('brain_forum_post_delete_form', $post);
+}
+
+
+/**
+ * Form constructor for the post add/edit form.
+ *
+ * @param $post
+ *   The post object to edit or for a create form an empty post object.
+ *
+ * @see brain_forum_post_add_page()
+ * @see brain_forum_post_edit_page()
+ * @see brain_forum_post_add_form_validate()
+ * @see brain_forum_post_add_form_submit()
+ * @ingroup forms
+ */
+function brain_forum_post_add_form($form, &$form_state, $post) {
+  global $user;
+
+  if (!isset($post->uid)) {
+    // Add the author name field depending on the current user.
+    if ($user->uid) {
+      $form['namemarkup'] = array(
+        '#type' => 'item',
+        '#title' => t('Your name'),
+        '#markup' => theme('username', array('account' => $user)),
+        '#weight' => -30,
+      );
+      $form['name'] = array(
+        '#type' => 'value',
+        '#value' => $user->name,
+        '#weight' => -30,
+      );
+    }
+    else {
+      $form['name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Your name'),
+        '#default_value' => isset($post->name) ? $post->name : '',
+        '#maxlength' => 60,
+        '#size' => 30,
+        '#required' => TRUE,
+        '#weight' => -30,
+      );
+    }
+  }
+
+  // Show the title field only if creating a new thread.
+  $form['title'] = array(
+    '#type' => !$post->is_first ? 'hidden' : 'textfield',
+    '#title' => t('Title'),
+    '#default_value' => isset($post->title) ? $post->title : '',
+    '#required' => !$post->is_first ? FALSE : TRUE,
+    '#weight' => -20,
+  );
+
+  // Add the field related form elements.
+  $form_state['post'] = $post;
+  field_attach_form('post', $post, $form, $form_state);
+
+  // If editing first post in thread, either load or create a thread entity.
+  if ($post->is_first) {
+    if ($post->tid) {
+      $thread = thread_load($post->tid);
+    }
+    else {
+      $thread = entity_create('thread', array());
+    }
+    $form_state['thread'] = $thread;
+    field_attach_form('thread', $thread, $form, $form_state);
+  }
+
+  // Show publishing options if user has sufficient permissions.
+  $form['status'] = array(
+    '#type' => (user_access('administer forum posts') || ($post->is_first && user_access('administer forum threads'))) ? 'checkbox' : 'hidden',
+    '#title' => t('Published'),
+    '#description' => t('Check to publish post/thread, uncheck to unpublish.'),
+    '#default_value' => isset($post->status) ? $post->status : 1,
+    '#weight' => 90,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Publish'),
+    '#weight' => 100,
+  );
+
+  // Show delete and cancel if editing a post.
+  if (!empty($post->pid)) {
+    if (user_access('administer forum threads') || (!$post->is_first && (user_access('administer forum posts') || user_access('delete forum posts')))) {
+      $form['delete'] = array(
+        '#type' => 'submit',
+        '#value' => t('Delete'),
+        '#suffix' => l(t('Cancel'), '<front>'),
+        '#submit' => array('brain_forum_post_add_form_submit_delete'),
+        '#weight' => 110,
+      );
+    }
+  }
+
+  return $form;
+}
+
+
+/**
+ * Form validation handler for brain_forum_post_add_form().
+ *
+ * Uses Field API to handle validation of attached fields.
+ *
+ * @see brain_forum_post_add_form_submit()
+ */
+function brain_forum_post_add_form_validate($form, &$form_state) {
+  $post = $form_state['post'];
+  field_attach_form_validate('post', $post, $form, $form_state);
+  if ($post->is_first) {
+    $thread = $form_state['thread'];
+    field_attach_form_validate('thread', $thread, $form, $form_state);
+  }
+}
+
+
+/**
+ * Form submission handler for brain_forum_post_add_form().
+ *
+ * @see brain_forum_post_add_form_validate()
+ */
+function brain_forum_post_add_form_submit($form, &$form_state) {
+  // Build entity objects.
+  $post = entity_ui_controller('post')->entityFormSubmitBuildEntity($form, $form_state);
+
+  if ($post->is_first) {
+    $thread = entity_ui_controller('thread')->entityFormSubmitBuildEntity($form, $form_state);
+  }
+
+  // Submit attached field values.
+  field_attach_submit('post', $post, $form, $form_state);
+  if ($post->is_first) {
+    field_attach_submit('thread', $thread, $form, $form_state);
+  }
+
+  global $user;
+
+  // Add created and changed times.
+  // Use REQUEST_TIME here instead of time() for performance reasons.
+  // See http://drupal.org/node/224333#time for more information.
+  if ($post->is_new = isset($post->is_new) ? $post->is_new : 0) {
+    $post->created = REQUEST_TIME;
+    // Add information about the author.
+    $post->uid = $user->uid;
+    $post->ip = ip_address();
+  }
+  $post->changed = REQUEST_TIME;
+
+  // Save the created time, author uid and name if creating a new thread.
+  if (!isset($post->tid) && $post->is_first) {
+    $thread->created = $post->created;
+    $thread->uid = $user->uid;
+    $thread->name = $post->name;
+  }
+
+  // Save the thread object.
+  if ($post->is_first) {
+    entity_save('thread', $thread);
+  }
+
+  // Save the thread.tid in post.tid.
+  if (!isset($post->tid) && $post->is_first) {
+    $post->tid = $thread->tid;
+  }
+
+  // Save the post object.
+  entity_save('post', $post);
+
+  // Redirect user to the thread this post belongs to.
+  // @todo Find some better way to get the path of the view.
+  $view_forum_thread = views_get_view('forum_thread');
+  $thread_path = $view_forum_thread->display['page']->display_options['path'];
+  $thread_path = drupal_substr($thread_path, 0, -1);
+  $form_state['redirect'] = $thread_path . $post->tid;
+
+  // @todo Check wheter a post or thread was saved and adjust message
+  //   accordingly.
+  drupal_set_message(t('Post saved succesfully.'));
+}
+
+
+/**
+ * Implements hook_field_attach_form().
+ */
+function brain_forum_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode) {
+  // If user is quoting a post, populate the message field in the reply form
+  // and add bbcode quote-tags around the text.
+  if (isset($_GET['quote'])) {
+    // Get post pid of the post to quote.
+    $quoted_pid = $_GET['quote'];
+
+    // Load the post object to quote.
+    $quoted_post = post_load($quoted_pid);
+
+    // Allow quoting only if the quoted post is published and belongs to the
+    // same thread.
+    if ($quoted_post->status && ($quoted_post->tid == $form_state['post']->tid)) {
+      // Use field_get_items() to get the message field, as it is created through
+      // the Field API.
+      $quoted_post_message = field_get_items('post', $quoted_post, 'forum_post_message');
+
+      // Wrap the text in quote-tags and populate the message field.
+      // @todo Check if LANGUAGE_NONE is the correct way to go here.
+      $form['forum_post_message'][LANGUAGE_NONE][0]['#default_value'] = '[quote]' . $quoted_post_message[0]['value'] . '[/quote]';
+    }
+  }
+
+  // Set default text format for message field to bbcode.
+  if (filter_format_exists('bbcode') && user_access('use text format bbcode')) {
+    // @todo Check if LANGUAGE_NONE is the correct way to go here.
+    $form['forum_post_message'][LANGUAGE_NONE][0]['#format'] = 'bbcode';
+  }
+  else {
+    // @todo Check if LANGUAGE_NONE is the correct way to go here.
+    $form['forum_post_message'][LANGUAGE_NONE][0]['#format'] = 'plain_text';
+  }
+
+  if (isset($form_state['post'])) {
+    $post = $form_state['post'];
+
+    // Hide forum_category field if user lacks sufficient permissions.
+    if ($post->is_first && $post->tid) {
+      if (!user_access('administer forum threads') && !user_access('move forum threads')) {
+        if (isset($form['forum_category'])) {
+          // @todo Check if LANGUAGE_NONE is the correct way to go here.
+          $form['forum_category'][LANGUAGE_NONE]['#type'] = 'hidden';
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function brain_forum_entity_presave($entity, $type) {
+  if ($type == 'post') {
+    // Save the thread title and status.
+    if ($entity->is_first) {
+      $thread = thread_load($entity->tid);
+      $thread->title = $entity->title;
+      $thread->status = $entity->status;
+      entity_save('thread', $thread);
+    }
+  }
+}
+
+
+/**
+ * Implements hook_{ENTITY_ID}_update().
+ *
+ * Responds to a post being updated.
+ *
+ * This hook is invoked after the post has been updated in the database.
+ *
+ * @param $post
+ *   The post obejct that is being updated.
+ *
+ * @see hook_entity_update()
+ * @see http://drupal.org/node/999938
+ * @see brain_forum_thread_get_last_published_pid()
+ * @see brain_forum_thread_update_last_post_info()
+ */
+function brain_forum_post_update($post) {
+  // Update the thread.posts count if the status of the post was changed.
+  // Also update info about last post in thread if necessary.
+  if ($post->status != $post->original->status && !$post->is_first) {
+    $thread = thread_load($post->tid);
+    if ($post->status) {
+      // Increment thread.posts count.
+      $thread->posts++;
+      // Update info about last post in thread.
+      if (($thread->last_pid != $post->pid) && ($post->pid == brain_forum_thread_get_last_published_pid($post->tid))) {
+        brain_forum_thread_update_last_post_info($thread, $post);
+      }
+    }
+    elseif ($thread->posts > 0) {
+      // Decrement thread.posts count.
+      $thread->posts--;
+      // Update info about last post in thread.
+      if ($thread->last_pid == $post->pid) {
+        $last_pid = brain_forum_thread_get_last_published_pid($post->tid);
+        $last_post = post_load($last_pid);
+        if (!$last_post->is_first) {
+          brain_forum_thread_update_last_post_info($thread, $last_post);
+        }
+        else {
+          brain_forum_thread_reset_last_post_info($thread);
+        }
+      }
+    }
+    entity_save('thread', $thread);
+  }
+}
+
+
+/**
+ * Implements hook_{ENTITY_ID}_insert().
+ *
+ * Responds when a post is inserted.
+ *
+ * This hook is invoked after the post is inserted into the database.
+ *
+ * @param $post
+ *   The post object that is being inserted.
+ *
+ * @see hook_entity_insert()
+ * @see http://drupal.org/node/999938
+ */
+function brain_forum_post_insert($post) {
+  if ($post->status && !$post->is_first) {
+    // Load the thread associated with the inserted post.
+    $thread = thread_load($post->tid);
+
+    // Save information about last post in this thread.
+    brain_forum_thread_update_last_post_info($thread, $post);
+
+    // Increment number of posts by 1.
+    $thread->posts++;
+
+    entity_save('thread', $thread);
+  }
+}
+
+
+/**
+ * Implements hook_{ENTITY_ID}_delete().
+ *
+ * Responds to post deletion.
+ *
+ * This hook is invoked after the post has been removed from the database.
+ *
+ * @param $post
+ *   The post object that is being deleted.
+ *
+ * @see hook_entity_delete()
+ * @see http://drupal.org/node/999938
+ */
+function brain_forum_post_delete($post) {
+  if ($post->is_first) {
+    // Delete thread.
+    entity_delete('thread', $post->tid);
+  }
+  else {
+    // Load the thread associated with the deleted post.
+    $thread = thread_load($post->tid);
+    if ($thread->posts > 0 && $post->status) {
+      // Decrement number of posts by 1.
+      $thread->posts--;
+    }
+    // Update information of last post in thread.
+    if ($thread->last_pid == $post->pid) {
+      $pid = brain_forum_thread_get_last_published_pid($post->tid);
+      $last_post = post_load($pid);
+      brain_forum_thread_update_last_post_info($thread, $last_post);
+    }
+
+    entity_save('thread', $thread);
+  }
+}
+
+
+/**
+ * Form API submit callback for the delete button.
+ *
+ * @see brain_forum_post_add_form()
+ */
+function brain_forum_post_add_form_submit_delete(&$form, &$form_state) {
+  // Unset ?destination in case it is given, otherwise below redirect will not
+  // work since drupal_goto() favors any given ?destination.
+  unset($_GET['destination']);
+  $form_state['redirect'] = 'forum/post/' . $form_state['post']->pid . '/delete';
+}
+
+
+/**
+ * Form constructor for the confirmation form for deleting a post.
+ *
+ * @param $post
+ *   The post object to delete.
+ *
+ * @see brain_forum_post_delete_page()
+ * @see confirm_form()
+ */
+function brain_forum_post_delete_form($form, &$form_state, $post) {
+  $form_state['post'] = $post;
+  $form['#submit'][] = 'brain_forum_post_delete_form_submit';
+  if ($post->is_first) {
+    $question = t('Are you sure you want to delete entire thread %title?', array('%title' => $post->title));
+  }
+  else {
+    $question = t('Are you sure you want to delete this post?');
+  }
+
+  $form = confirm_form($form, filter_xss($question), '<front>', t('This action cannot be undone.'), t('Delete'), t('Cancel'));
+
+  return $form;
+}
+
+
+/**
+ * Submission handler for brain_forum_post_delete_form().
+ *
+ * @see entity_delete_multiple()
+ * @see brain_forum_thread_get_pids()
+ */
+function brain_forum_post_delete_form_submit($form, &$form_state) {
+  $post = $form_state['post'];
+  $pids = array($post->pid);
+
+  if ($post->is_first) {
+    $message = t('Thread %title has been deleted.', array('%title' => $post->title));
+    $log_message = 'Deleted thread %title';
+
+    // Get post pid of all posts that have the same thread tid as this post.
+    $pids = brain_forum_thread_get_pids($post->tid);
+  }
+  else {
+    $message = t('The post has been deleted.');
+    $log_message = 'Deleted post %pid';
+  }
+
+  entity_delete_multiple('post', $pids);
+
+  drupal_set_message($message);
+  watchdog('Brain Forum', $log_message, array('%title' => $post->title, '%pid' => $post->pid));
+
+  $form_state['redirect'] = '<front>';
+}
+
+
+/**
+ * Returns an array of all post pids that belong to the specified thread.
+ *
+ * @param $tid
+ *   Thread tid to get the post pids from.
+ *
+ * @return
+ *   An array of post pids.
+ *
+ * @todo Fetch table name from entity info instead of hardcoding it.
+ */
+function brain_forum_thread_get_pids($tid) {
+  $query = db_select('brain_forum_post', 'p');
+  $query->fields('p', array('pid'))
+    ->condition('tid', $tid, '=');
+
+  $result = $query->execute();
+  while ($record = $result->fetchAssoc()) {
+    $pids[] = $record['pid'];
+  }
+
+  return $pids;
+}
+
+
+/**
+ * Returns post.pid of the last published post in the specified thread.
+ *
+ * @param $tid
+ *   Thread tid to get the post pid from.
+ *
+ * @return
+ *   Post pid.
+ *
+ * @todo Fetch table name from entity info instead of hardcoding it.
+ */
+function brain_forum_thread_get_last_published_pid($tid) {
+  $query = db_select('brain_forum_post', 'p');
+  $query->fields('p', array('pid'))
+    ->condition('tid', $tid, '=')
+    ->condition('status', 1, '=')
+    ->orderBy('pid', 'DESC')
+    ->range(0, 1);
+
+  $result = $query->execute();
+  while ($record = $result->fetchAssoc()) {
+    return $record['pid'];
+  }
+}
+
+
+/**
+ * Updates information about the last publisehd post in a thread.
+ *
+ * @param &$thread
+ *   Thread object to update.
+ * @param $post
+ *   Post object to fetch info from. This would be the last published post in a
+ *   thread.
+ */
+function brain_forum_thread_update_last_post_info(&$thread, $post) {
+  if (is_object($thread) && is_object($post)) {
+    $thread->last_pid = $post->pid;
+    $thread->last_uid = $post->uid;
+    $thread->last_name = $post->name;
+    $thread->last_time = $post->created;
+  }
+}
+
+
+/**
+ * Resets information about the last publisehd post in a thread.
+ *
+ * @param &$thread
+ *   Thread object to update.
+ */
+function brain_forum_thread_reset_last_post_info(&$thread) {
+  if (is_object($thread)) {
+    $thread->last_pid = 0;
+    $thread->last_uid = 0;
+    $thread->last_name = '';
+    $thread->last_time = 0;
+  }
+}

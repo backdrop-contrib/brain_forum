@@ -1,0 +1,333 @@
+<?php
+
+/**
+ * @file
+ * Install, uninstall and schema functions for the brain_forum module.
+ */
+
+
+/**
+ * Implements hook_install().
+ */
+function brain_forum_install() {
+  // Create a message field for forum posts.
+  $field = array(
+    'field_name' => 'forum_post_message',
+    'type' => 'text_long',
+    'cardinality' => 1,
+    'translatable' => TRUE,
+  );
+  field_create_field($field);
+
+  // Attach message field to the forum post entity.
+  $instance = array(
+    'entity_type' => 'post',
+    'field_name' => 'forum_post_message',
+    'bundle' => 'post',
+    'label' => st('Message'),
+    'widget' => array(
+      'type' => 'text_textarea',
+      'weight' => 80,
+    ),
+    'settings' => array(
+      'text_processing' => TRUE,
+    ),
+    'required' => TRUE,
+  );
+  field_create_instance($instance);
+
+
+  // If we enable forum at the same time as taxonomy we need to call
+  // field_associate_fields() as otherwise the field won't be enabled until
+  // hook modules_enabled is called which takes place after hook_enable events.
+  field_associate_fields('taxonomy');
+  // Create the forum vocabulary if it does not exist.
+  $vocabulary = taxonomy_vocabulary_load(variable_get('brain_forum_categories', 0));
+  if (!$vocabulary) {
+    $edit = array(
+      'name' => st('Forum categories'),
+      'machine_name' => 'forum_categories',
+      'description' => st('Forum categories'),
+      'hierarchy' => 1,
+      'module' => 'brain_forum',
+    );
+    $vocabulary = (object) $edit;
+    taxonomy_vocabulary_save($vocabulary);
+    variable_set('brain_forum_categories', $vocabulary->vid);
+  }
+
+  // Create a taxonomy field for forum threads.
+  $field = array(
+    'field_name' => 'forum_category',
+    'type' => 'taxonomy_term_reference',
+    'settings' => array(
+      'allowed_values' => array(
+        array(
+          'vocabulary' => $vocabulary->machine_name,
+          'parent' => 0,
+        ),
+      ),
+    ),
+    'cardinality' => 1,
+    'translatable' => TRUE,
+  );
+  field_create_field($field);
+
+  // Attach forum catergory field to forum thread entity.
+  $instance = array(
+    'entity_type' => 'thread',
+    'field_name' => 'forum_category',
+    'bundle' => 'thread',
+    'label' => st('Category'),
+    'required' => TRUE,
+  );
+  field_create_instance($instance);
+
+  // Create a new text format for BBCode.
+  // This will be used for forum posts.
+  if (module_exists('bbcode') && !filter_format_exists('bbcode')) {
+    $bbcode_format = array(
+      'format' => 'bbcode',
+      'name' => 'BBCode',
+      'weight' => 1,
+      'filters' => array(
+        // BBCode filter.
+        'bbcode' => array(
+          'weight' => 0,
+          'status' => 1,
+        ),
+        // HTML Corrector.
+        'filter_htmlcorrector' => array(
+          'weight' => 10,
+          'status' => 1,
+        ),
+      ),
+    );
+    $bbcode_format = (object) $bbcode_format;
+    filter_format_save($bbcode_format);
+  }
+
+}
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function brain_forum_uninstall() {
+  // Go through each of the fields defined by this module and delete
+  // all instances of the field, their data, and the field itself.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  field_delete_field('forum_post_message');
+  field_delete_field('forum_category');
+
+
+  // Loop over any remaining field instances attached to the post entity
+  // (any fields added via Fields UI) and delete them individually.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  $instances = field_info_instances('post', 'post');
+  $instances = field_info_instances('thread', 'thread');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+
+  // Purge all field infromation.
+  // http://api.drupal.org/api/function/field_purge_batch/7
+  field_purge_batch(1000);
+
+  // Remove the default views created by this module.
+  $views = array('forum_listing', 'forum_thread');
+  foreach ($views as $name) {
+    $view = views_ui_cache_load($name);
+    if ($view) {
+      $view->delete();
+    }
+    //views_object_cache_clear('view', $view->name);
+  }
+
+  // Delete the forum vocabulary if it exists.
+  taxonomy_vocabulary_delete(variable_get('brain_forum_categories', 0));
+
+}
+
+
+/**
+ * Implements hook_schema().
+ */
+function brain_forum_schema() {
+  $schema = array();
+
+  $schema['brain_forum_post'] = array(
+    'description' => 'The base table for the post entity.',
+      'fields' => array(
+        'pid' => array(
+          'description' => 'Primary Key: Identifier for a post.',
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'tid' => array(
+          'description' => 'The {brain_forum_thread}.tid of the thread this post belongs to.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'is_first' => array(
+          'description' => 'If set to 1, the post is the first post in a thread.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+          'size' => 'tiny',
+        ),
+        'title' => array(
+          'description' => 'The title of the post.',
+          'type' => 'varchar',
+          'length' => 255,
+          'default' => '',
+        ),
+        'uid' => array(
+          'description' => "The post author's {users}.uid. If set to 0, the post was created by an anonymous user.",
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'name' => array(
+          'description' => "The post author's name. Uses {users}.name if the user is logged in, otherwise uses the value typed into the post form.",
+          'type' => 'varchar',
+          'length' => 60,
+          'not null' => TRUE,
+          'default' => 'und',
+        ),
+        'ip' => array(
+          'description' => "The post author's IP address.",
+          'type' => 'varchar',
+          'length' => 20,
+          'not null' => TRUE,
+          'default' => 'und',
+        ),
+        'created' => array(
+          'description' => 'Unix timestamp when the post was created.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'changed' => array(
+          'description' => 'Unix timestamp when the post was most recently saved.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'status' => array(
+          'description' => 'The published status of the post. (0 = Not Published, 1 = Published)',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 1,
+          'size' => 'tiny',
+        ),
+    ),
+    'primary key' => array('pid'),
+  );
+
+
+  $schema['brain_forum_thread'] = array(
+    'description' => 'The base table for the thread entity.',
+      'fields' => array(
+        'tid' => array(
+          'description' => 'Primary Key: Identifier for a thread.',
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'title' => array(
+          'description' => 'The title of the first post in the thread.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+          'default' => '',
+        ),
+        'uid' => array(
+          'description' => "The thread starter's {users}.uid. If set to 0, the post was created by an anonymous user.",
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'name' => array(
+          'description' => "The thread starter's name. Uses {users}.name if the user is logged in, otherwise uses the value typed into the add form.",
+          'type' => 'varchar',
+          'length' => 60,
+          'not null' => TRUE,
+          'default' => 'und',
+        ),
+        'created' => array(
+          'description' => 'Unix timestamp when the thread was created.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'last_pid' => array(
+          'description' => 'The {brain_forum_post}.pid of the last post in the thread.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'last_uid' => array(
+          'description' => 'The {users}.uid of the author of the last post in the thread.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'last_name' => array(
+          'description' => 'The name of hte author of the last post in the thread. Uses {users}.name if the user is logged in, otherwise uses the value typed into the post form.',
+          'type' => 'varchar',
+          'length' => 60,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'last_time' => array(
+          'description' => 'Unix timestamp when the last post in the thread was created.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'posts' => array(
+          'description' => 'Number of posts in the thread.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'views' => array(
+          'description' => 'Number of times this thread has been viewed.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'status' => array(
+          'description' => 'The published status of the thread. (0 = Not Published, 1 = Published)',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 1,
+          'size' => 'tiny',
+        ),
+        'closed' => array(
+          'description' => 'The closed status of the thread. (0 = Not Closed, 1 = Closed)',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+          'size' => 'tiny',
+        ),
+    ),
+    'primary key' => array('tid'),
+  );
+
+  return $schema;
+}
