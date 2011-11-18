@@ -293,7 +293,8 @@ function brain_forum_views_pre_render(&$view) {
       // Attach reply form to view if viewing last page of the view.
       $last_page = $last_page = $GLOBALS['pager_total'][0]-1;
       if (pager_find_page() == $last_page && user_access('create forum posts')) {
-        $view->attachment_after = drupal_render(brain_forum_post_add_page($first_post));
+        $attachment_build = brain_forum_post_add_page($first_post);
+        $view->attachment_after = drupal_render($attachment_build);
       }
 
       // Save the thread object.
