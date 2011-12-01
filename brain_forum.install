@@ -227,6 +227,14 @@ function brain_forum_schema() {
           'default' => 1,
           'size' => 'tiny',
         ),
+        'thread_status' => array(
+          'description' => 'The published status of the thread the post belongs to. (0 = Not Published, 1 = Published)',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 1,
+          'size' => 'tiny',
+        ),
     ),
     'primary key' => array('pid'),
   );
@@ -330,4 +338,64 @@ function brain_forum_schema() {
   );
 
   return $schema;
+}
+
+/**
+ * Add field thread_status to brain_forum_post table.
+ */
+function brain_forum_update_7000() {
+  db_add_field('brain_forum_post', 'thread_status', array(
+    'description' => 'The published status of the thread. (0 = Not Published, 1 = Published)',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 1,
+    'size' => 'tiny',
+  ));
+}
+
+/**
+ * Set the value of brain_forum_post.thread_status for each post.
+ */
+function brain_forum_update_7001(&$sandbox) {
+  // Update thread_status of all posts by fetching it from the thread table.
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_pid'] = 0;
+    $sandbox['max'] = db_query('SELECT COUNT(DISTINCT pid) FROM {brain_forum_post}')->fetchField();
+  }
+
+  $posts = db_select('brain_forum_post', 'p')
+    ->fields('p', array('pid', 'tid', 'thread_status'))
+    ->condition('pid', $sandbox['current_pid'], '>')
+    ->range(0, 3)
+    ->orderBy('pid', 'ASC')
+    ->execute();
+
+  foreach ($posts as $post) {
+    $thread = db_select('brain_forum_thread', 't')
+      ->fields('t', array('tid', 'status'))
+      ->condition('tid', $post->tid, '=')
+      ->range(0, 1)
+      ->execute()
+      ->fetchAssoc();
+
+    $post->thread_status = $thread['status'];
+    db_update('brain_forum_post')
+      ->fields(array('thread_status' => $post->thread_status))
+      ->condition('pid', $post->pid)
+      ->execute();
+
+    $sandbox['progress']++;
+    $sandbox['current_pid'] = $post->pid;
+  }
+
+  $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
+
+  // To display a message to the user when the update is completed, return it.
+  // If you do not want to display a completion message, simply return nothing.
+  return t('The fields were successfully updated.');
+
+  // In case of an error, simply throw an exception with an error message.
+  throw new DrupalUpdateException('Something went wrong.');
 }

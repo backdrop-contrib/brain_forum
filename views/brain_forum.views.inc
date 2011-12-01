@@ -45,6 +45,24 @@ function brain_forum_views_data_alter(&$data) {
     ),
   );
 
+  // Alter the post.thread_status handler
+  $data['brain_forum_post']['thread_status'] = array(
+    'title' => t('Thread is published'),
+    'help' => t("Whether or not the post's thread is published."),
+    'field' => array(
+      'handler' => 'views_handler_field_boolean',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_boolean_operator',
+      'label' => t('Thread is published'),
+      'type' => 'yes-no',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+
   // Alter the thread status handler
   $data['brain_forum_thread']['status'] = array(
     'title' => t('Published'),
@@ -71,6 +89,17 @@ function brain_forum_views_data_alter(&$data) {
       'field' => 'status',
       'handler' => 'brain_forum_post_handler_filter_status',
       'label' => t('Published or admin'),
+    ),
+  );
+
+  // Add post.thread_status published or admin field
+  $data['brain_forum_post']['thread_status_extra'] = array(
+    'title' => t('Thread is published or admin'),
+    'help' => t('Filters out posts in unpublished threads if the current user cannot view them.'),
+    'filter' => array(
+      'field' => 'thread_status',
+      'handler' => 'brain_forum_post_handler_filter_thread_status',
+      'label' => t('Thread is published or admin'),
     ),
   );
 

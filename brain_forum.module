@@ -635,6 +635,7 @@ function brain_forum_post_add_form_submit($form, &$form_state) {
     // Add information about the author.
     $post->uid = $user->uid;
     $post->ip = ip_address();
+    $post->thread_status = $thread->status;
   }
   $post->changed = REQUEST_TIME;
 
@@ -733,6 +734,38 @@ function brain_forum_entity_presave($entity, $type) {
       $thread->title = $entity->title;
       $thread->status = $entity->status;
       entity_save('thread', $thread);
+    }
+  }
+}
+
+
+/**
+ * Implements hook_{ENTITY_ID}_update().
+ *
+ * Responds to a post being updated.
+ *
+ * This hook is invoked after the post has been updated in the database.
+ *
+ * @param $post
+ *   The post obejct that is being updated.
+ *
+ * @see hook_entity_update()
+ * @see http://drupal.org/node/999938
+ * @see brain_forum_thread_get_last_published_pid()
+ * @see brain_forum_thread_update_last_post_info()
+ */
+function brain_forum_thread_update($thread) {
+  // Update the brain_forum_post.thread_status for each post in the thread.
+  if ($thread->status != $thread->original->status) {
+    $posts = db_select('brain_forum_post', 'p')
+      ->fields('p', array('pid'))
+      ->condition('tid', $thread->tid, '=')
+      ->execute();
+
+    foreach ($posts as $entity) {
+      $post = post_load($entity->pid);
+      $post->thread_status = $thread->status;
+      entity_save('post', $post);
     }
   }
 }

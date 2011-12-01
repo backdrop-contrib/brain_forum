@@ -13,4 +13,5 @@ files[] = views/brain_forum_post_handler_field_edit.inc
 files[] = views/brain_forum_post_handler_field_quote.inc
 files[] = views/brain_forum_post_handler_field_reply.inc
 files[] = views/brain_forum_post_handler_filter_status.inc
+files[] = views/brain_forum_post_handler_filter_thread_status.inc
 files[] = views/brain_forum_thread_handler_filter_status.inc
