@@ -1,0 +1,396 @@
+{
+    "_config_name": "views.view.forum_thread",
+    "name": "forum_thread",
+    "description": "Show all posts paged in a forum thread",
+    "tag": "brain_forum",
+    "base_table": "brain_forum_forum_post",
+    "human_name": "Forum thread",
+    "core": "7",
+    "display": {
+        "default": {
+            "display_title": "Master",
+            "display_plugin": "default",
+            "display_options": {
+                "query": {
+                    "type": "views_query",
+                    "options": {
+                        "query_comment": false
+                    }
+                },
+                "css_class": "forum-thread",
+                "access": {
+                    "type": "perm",
+                    "perm": "view forum threads"
+                },
+                "cache": {
+                    "type": "none"
+                },
+                "exposed_form": {
+                    "type": "basic"
+                },
+                "pager": {
+                    "type": "full",
+                    "options": {
+                        "items_per_page": "10",
+                        "offset": "0",
+                        "id": "0",
+                        "expose": {
+                            "items_per_page_options_all": 0
+                        }
+                    }
+                },
+                "style_plugin": "default",
+                "row_plugin": "fields",
+                "row_options": {
+                    "inline": {
+                        "name": "name",
+                        "created": "created",
+                        "edit": "edit",
+                        "reply": "reply",
+                        "quote": "quote"
+                    },
+                    "separator": " | ",
+                    "hide_empty": 0,
+                    "default_field_elements": 1
+                },
+                "empty": {
+                    "area": {
+                        "id": "area",
+                        "table": "views",
+                        "field": "area",
+                        "empty": false,
+                        "content": "The thread could not be found.",
+                        "format": "plain_text",
+                        "tokenize": 0
+                    }
+                },
+                "relationships": {
+                    "uid": {
+                        "id": "uid",
+                        "table": "brain_forum_forum_post",
+                        "field": "uid",
+                        "required": 0
+                    }
+                },
+                "fields": {
+                    "title": {
+                        "id": "title",
+                        "table": "brain_forum_forum_post",
+                        "field": "title",
+                        "label": "",
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_type": "h1",
+                        "element_class": "forum-thread-title",
+                        "element_label_colon": false,
+                        "element_default_classes": 1,
+                        "hide_empty": 1,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 1
+                    },
+                    "pid": {
+                        "id": "pid",
+                        "table": "brain_forum_forum_post",
+                        "field": "pid",
+                        "label": "",
+                        "exclude": true,
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_default_classes": 1,
+                        "hide_empty": 0,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 0,
+                        "format_plural": 0
+                    },
+                    "uid": {
+                        "id": "uid",
+                        "table": "brain_forum_forum_post",
+                        "field": "uid",
+                        "label": "",
+                        "exclude": true,
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_default_classes": 1,
+                        "hide_empty": 0,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 0,
+                        "link_to_user": 1
+                    },
+                    "name": {
+                        "id": "name",
+                        "table": "brain_forum_forum_post",
+                        "field": "name",
+                        "label": "",
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "path": "user/[uid]",
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_wrapper_class": "author",
+                        "element_default_classes": 1,
+                        "hide_empty": 0,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 0,
+                        "link_to_user": 1,
+                        "overwrite_anonymous": 0
+                    },
+                    "created": {
+                        "id": "created",
+                        "table": "brain_forum_forum_post",
+                        "field": "created",
+                        "label": "",
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_default_classes": 1,
+                        "hide_empty": 0,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 0,
+                        "date_format": "long"
+                    },
+                    "picture": {
+                        "id": "picture",
+                        "table": "users",
+                        "field": "picture",
+                        "relationship": "uid",
+                        "label": "",
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_wrapper_class": "forum-thread-author",
+                        "element_default_classes": 1,
+                        "hide_empty": 0,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 0
+                    },
+                    "forum_forum_post_message": {
+                        "id": "forum_forum_post_message",
+                        "table": "field_data_forum_forum_post_message",
+                        "field": "forum_forum_post_message",
+                        "label": "",
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_wrapper_class": "forum-thread-message",
+                        "element_default_classes": 1,
+                        "hide_empty": 0,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 0,
+                        "field_api_classes": 0
+                    },
+                    "edit": {
+                        "id": "edit",
+                        "table": "brain_forum_forum_post",
+                        "field": "edit",
+                        "label": "",
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_wrapper_class": "forum-thread-links",
+                        "element_default_classes": 1,
+                        "hide_empty": 1,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 1,
+                        "text": "edit"
+                    },
+                    "reply": {
+                        "id": "reply",
+                        "table": "brain_forum_forum_post",
+                        "field": "reply",
+                        "label": "",
+                        "alter": {
+                            "alter_text": 0,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_wrapper_class": "forum-thread-links",
+                        "element_default_classes": 1,
+                        "hide_empty": 1,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 1,
+                        "text": "reply"
+                    },
+                    "quote": {
+                        "id": "quote",
+                        "table": "brain_forum_forum_post",
+                        "field": "quote",
+                        "label": "",
+                        "alter": {
+                            "alter_text": 1,
+                            "make_link": 0,
+                            "absolute": 0,
+                            "external": 0,
+                            "replace_spaces": 0,
+                            "trim_whitespace": 0,
+                            "nl2br": 0,
+                            "word_boundary": 1,
+                            "ellipsis": 1,
+                            "strip_tags": 0,
+                            "trim": 0,
+                            "html": 0
+                        },
+                        "element_label_colon": false,
+                        "element_wrapper_class": "forum-thread-links",
+                        "element_default_classes": 1,
+                        "hide_empty": 1,
+                        "empty_zero": 0,
+                        "hide_alter_empty": 1,
+                        "text": "quote"
+                    }
+                },
+                "sorts": {
+                    "created": {
+                        "id": "created",
+                        "table": "brain_forum_forum_post",
+                        "field": "created"
+                    }
+                },
+                "arguments": {
+                    "tid": {
+                        "id": "tid",
+                        "table": "brain_forum_forum_post",
+                        "field": "tid",
+                        "default_argument_type": "fixed",
+                        "default_argument_skip_url": 0,
+                        "summary": {
+                            "number_of_records": "0",
+                            "format": "default_summary"
+                        },
+                        "summary_options": {
+                            "items_per_page": "25"
+                        },
+                        "break_phrase": 0,
+                        "not": 0
+                    }
+                },
+                "filters": {
+                    "status_extra": {
+                        "id": "status_extra",
+                        "table": "brain_forum_forum_post",
+                        "field": "status_extra"
+                    }
+                },
+                "title": "Thread"
+            }
+        },
+        "page": {
+            "display_title": "Page",
+            "display_plugin": "page",
+            "display_options": {
+                "query": {
+                    "type": "views_query",
+                    "options": []
+                },
+                "display_description": "Show all posts paged in a forum thread selected by contextual filter",
+                "path": "forum/thread/%"
+            }
+        }
+    }
+}

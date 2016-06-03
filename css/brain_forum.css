@@ -1,0 +1,10 @@
+/**
+ * @file
+ * CSS for the brain_forum module.
+ */
+
+.view-forum-thread .views-row {
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 15px;
+}

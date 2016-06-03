@@ -14,7 +14,7 @@ function brain_forum_views_default_views() {
   // Begin copy and paste of output from the Export tab of a view.
   $view = new view;
   $view->name = 'forum_listing';
-  $view->description = 'Lists all threads and information about the last post in each thread';
+  $view->description = 'Lists all threads and information about the last forum_post in each thread';
   $view->tag = 'brain_forum';
   $view->base_table = 'brain_forum_thread';
   $view->human_name = 'Forum listing';
@@ -38,7 +38,7 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['row_options']['inline'] = array(
     'views' => 'views',
     'last_time' => 'last_time',
-    'posts' => 'posts',
+    'forum_posts' => 'forum_posts',
     'name' => 'name',
   );
   $handler->display->display_options['row_options']['separator'] = ' | ';
@@ -175,39 +175,39 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['views']['prefix'] = 'Read ';
   $handler->display->display_options['fields']['views']['suffix'] = ' times';
   /* Field: Forum thread: Posts */
-  $handler->display->display_options['fields']['posts']['id'] = 'posts';
-  $handler->display->display_options['fields']['posts']['table'] = 'brain_forum_thread';
-  $handler->display->display_options['fields']['posts']['field'] = 'posts';
-  $handler->display->display_options['fields']['posts']['label'] = '';
-  $handler->display->display_options['fields']['posts']['exclude'] = TRUE;
-  $handler->display->display_options['fields']['posts']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['posts']['alter']['make_link'] = 1;
-  $handler->display->display_options['fields']['posts']['alter']['path'] = 'forum/thread/[tid]';
-  $handler->display->display_options['fields']['posts']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['posts']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['posts']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['posts']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['posts']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['posts']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['posts']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['posts']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['posts']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['posts']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['posts']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['posts']['element_wrapper_class'] = 'forum-thread-stats';
-  $handler->display->display_options['fields']['posts']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['posts']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['posts']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['posts']['hide_alter_empty'] = 0;
-  $handler->display->display_options['fields']['posts']['format_plural'] = 0;
-  $handler->display->display_options['fields']['posts']['suffix'] = ' replies';
-  /* Field: Forum thread: Last post date */
+  $handler->display->display_options['fields']['forum_posts']['id'] = 'forum_posts';
+  $handler->display->display_options['fields']['forum_posts']['table'] = 'brain_forum_thread';
+  $handler->display->display_options['fields']['forum_posts']['field'] = 'forum_posts';
+  $handler->display->display_options['fields']['forum_posts']['label'] = '';
+  $handler->display->display_options['fields']['forum_posts']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['forum_posts']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['alter']['make_link'] = 1;
+  $handler->display->display_options['fields']['forum_posts']['alter']['path'] = 'forum/thread/[tid]';
+  $handler->display->display_options['fields']['forum_posts']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['forum_posts']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['forum_posts']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['forum_posts']['element_wrapper_class'] = 'forum-thread-stats';
+  $handler->display->display_options['fields']['forum_posts']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['forum_posts']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['format_plural'] = 0;
+  $handler->display->display_options['fields']['forum_posts']['suffix'] = ' replies';
+  /* Field: Forum thread: Last forum_post date */
   $handler->display->display_options['fields']['last_time']['id'] = 'last_time';
   $handler->display->display_options['fields']['last_time']['table'] = 'brain_forum_thread';
   $handler->display->display_options['fields']['last_time']['field'] = 'last_time';
   $handler->display->display_options['fields']['last_time']['label'] = '';
   $handler->display->display_options['fields']['last_time']['alter']['alter_text'] = 1;
-  $handler->display->display_options['fields']['last_time']['alter']['text'] = '[posts] (latest [last_time])';
+  $handler->display->display_options['fields']['last_time']['alter']['text'] = '[forum_posts] (latest [last_time])';
   $handler->display->display_options['fields']['last_time']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['last_time']['alter']['absolute'] = 0;
   $handler->display->display_options['fields']['last_time']['alter']['external'] = 0;
@@ -268,7 +268,7 @@ function brain_forum_views_default_views() {
     t('Read '),
     t(' times'),
     t(' replies'),
-    t('[posts] (latest [last_time])'),
+    t('[forum_posts] (latest [last_time])'),
     t('All'),
     t('Page'),
   );
@@ -284,9 +284,9 @@ function brain_forum_views_default_views() {
   // Begin copy and paste of output from the Export tab of a view.
   $view = new view;
   $view->name = 'forum_thread';
-  $view->description = 'Show all posts paged in a forum thread';
+  $view->description = 'Show all forum_posts paged in a forum thread';
   $view->tag = 'brain_forum';
-  $view->base_table = 'brain_forum_post';
+  $view->base_table = 'brain_forum_forum_post';
   $view->human_name = 'Forum thread';
   $view->core = 7;
   $view->api_version = '3.0-alpha1';
@@ -326,14 +326,14 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['empty']['area']['content'] = 'The thread could not be found.';
   $handler->display->display_options['empty']['area']['format'] = 'plain_text';
   $handler->display->display_options['empty']['area']['tokenize'] = 0;
-  /* Relationship: Forum post: Uid */
+  /* Relationship: Forum forum_post: Uid */
   $handler->display->display_options['relationships']['uid']['id'] = 'uid';
-  $handler->display->display_options['relationships']['uid']['table'] = 'brain_forum_post';
+  $handler->display->display_options['relationships']['uid']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['relationships']['uid']['field'] = 'uid';
   $handler->display->display_options['relationships']['uid']['required'] = 0;
-  /* Field: Forum post: Title */
+  /* Field: Forum forum_post: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
-  $handler->display->display_options['fields']['title']['table'] = 'brain_forum_post';
+  $handler->display->display_options['fields']['title']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['fields']['title']['field'] = 'title';
   $handler->display->display_options['fields']['title']['label'] = '';
   $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
@@ -355,9 +355,9 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['title']['hide_empty'] = 1;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
   $handler->display->display_options['fields']['title']['hide_alter_empty'] = 1;
-  /* Field: Forum post: Forum post ID */
+  /* Field: Forum forum_post: Forum forum_post ID */
   $handler->display->display_options['fields']['pid']['id'] = 'pid';
-  $handler->display->display_options['fields']['pid']['table'] = 'brain_forum_post';
+  $handler->display->display_options['fields']['pid']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['fields']['pid']['field'] = 'pid';
   $handler->display->display_options['fields']['pid']['label'] = '';
   $handler->display->display_options['fields']['pid']['exclude'] = TRUE;
@@ -379,9 +379,9 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['pid']['empty_zero'] = 0;
   $handler->display->display_options['fields']['pid']['hide_alter_empty'] = 0;
   $handler->display->display_options['fields']['pid']['format_plural'] = 0;
-  /* Field: Forum post: Uid */
+  /* Field: Forum forum_post: Uid */
   $handler->display->display_options['fields']['uid']['id'] = 'uid';
-  $handler->display->display_options['fields']['uid']['table'] = 'brain_forum_post';
+  $handler->display->display_options['fields']['uid']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['fields']['uid']['field'] = 'uid';
   $handler->display->display_options['fields']['uid']['label'] = '';
   $handler->display->display_options['fields']['uid']['exclude'] = TRUE;
@@ -403,9 +403,9 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['uid']['empty_zero'] = 0;
   $handler->display->display_options['fields']['uid']['hide_alter_empty'] = 0;
   $handler->display->display_options['fields']['uid']['link_to_user'] = 1;
-  /* Field: Forum post: Name */
+  /* Field: Forum forum_post: Name */
   $handler->display->display_options['fields']['name']['id'] = 'name';
-  $handler->display->display_options['fields']['name']['table'] = 'brain_forum_post';
+  $handler->display->display_options['fields']['name']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['fields']['name']['field'] = 'name';
   $handler->display->display_options['fields']['name']['label'] = '';
   $handler->display->display_options['fields']['name']['alter']['alter_text'] = 0;
@@ -429,9 +429,9 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['name']['hide_alter_empty'] = 0;
   $handler->display->display_options['fields']['name']['link_to_user'] = 1;
   $handler->display->display_options['fields']['name']['overwrite_anonymous'] = 0;
-  /* Field: Forum post: Created date */
+  /* Field: Forum forum_post: Created date */
   $handler->display->display_options['fields']['created']['id'] = 'created';
-  $handler->display->display_options['fields']['created']['table'] = 'brain_forum_post';
+  $handler->display->display_options['fields']['created']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['fields']['created']['field'] = 'created';
   $handler->display->display_options['fields']['created']['label'] = '';
   $handler->display->display_options['fields']['created']['alter']['alter_text'] = 0;
@@ -476,33 +476,33 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['picture']['hide_empty'] = 0;
   $handler->display->display_options['fields']['picture']['empty_zero'] = 0;
   $handler->display->display_options['fields']['picture']['hide_alter_empty'] = 0;
-  /* Field: Forum post: Message */
-  $handler->display->display_options['fields']['forum_post_message']['id'] = 'forum_post_message';
-  $handler->display->display_options['fields']['forum_post_message']['table'] = 'field_data_forum_post_message';
-  $handler->display->display_options['fields']['forum_post_message']['field'] = 'forum_post_message';
-  $handler->display->display_options['fields']['forum_post_message']['label'] = '';
-  $handler->display->display_options['fields']['forum_post_message']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['forum_post_message']['element_wrapper_class'] = 'forum-thread-message';
-  $handler->display->display_options['fields']['forum_post_message']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['forum_post_message']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['hide_alter_empty'] = 0;
-  $handler->display->display_options['fields']['forum_post_message']['field_api_classes'] = 0;
-  /* Field: Forum post: Edit link */
+  /* Field: Forum forum_post: Message */
+  $handler->display->display_options['fields']['forum_forum_post_message']['id'] = 'forum_forum_post_message';
+  $handler->display->display_options['fields']['forum_forum_post_message']['table'] = 'field_data_forum_forum_post_message';
+  $handler->display->display_options['fields']['forum_forum_post_message']['field'] = 'forum_forum_post_message';
+  $handler->display->display_options['fields']['forum_forum_post_message']['label'] = '';
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['forum_forum_post_message']['element_wrapper_class'] = 'forum-thread-message';
+  $handler->display->display_options['fields']['forum_forum_post_message']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['forum_forum_post_message']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['forum_forum_post_message']['field_api_classes'] = 0;
+  /* Field: Forum forum_post: Edit link */
   $handler->display->display_options['fields']['edit']['id'] = 'edit';
-  $handler->display->display_options['fields']['edit']['table'] = 'brain_forum_post';
+  $handler->display->display_options['fields']['edit']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['fields']['edit']['field'] = 'edit';
   $handler->display->display_options['fields']['edit']['label'] = '';
   $handler->display->display_options['fields']['edit']['alter']['alter_text'] = 0;
@@ -524,9 +524,9 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['edit']['empty_zero'] = 0;
   $handler->display->display_options['fields']['edit']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['edit']['text'] = 'edit';
-  /* Field: Forum post: Reply link */
+  /* Field: Forum forum_post: Reply link */
   $handler->display->display_options['fields']['reply']['id'] = 'reply';
-  $handler->display->display_options['fields']['reply']['table'] = 'brain_forum_post';
+  $handler->display->display_options['fields']['reply']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['fields']['reply']['field'] = 'reply';
   $handler->display->display_options['fields']['reply']['label'] = '';
   $handler->display->display_options['fields']['reply']['alter']['alter_text'] = 0;
@@ -548,9 +548,9 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['reply']['empty_zero'] = 0;
   $handler->display->display_options['fields']['reply']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['reply']['text'] = 'reply';
-  /* Field: Forum post: Quote link */
+  /* Field: Forum forum_post: Quote link */
   $handler->display->display_options['fields']['quote']['id'] = 'quote';
-  $handler->display->display_options['fields']['quote']['table'] = 'brain_forum_post';
+  $handler->display->display_options['fields']['quote']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['fields']['quote']['field'] = 'quote';
   $handler->display->display_options['fields']['quote']['label'] = '';
   $handler->display->display_options['fields']['quote']['alter']['alter_text'] = 1;
@@ -572,13 +572,13 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['fields']['quote']['empty_zero'] = 0;
   $handler->display->display_options['fields']['quote']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['quote']['text'] = 'quote';
-  /* Sort criterion: Forum post: Created date */
+  /* Sort criterion: Forum forum_post: Created date */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
-  $handler->display->display_options['sorts']['created']['table'] = 'brain_forum_post';
+  $handler->display->display_options['sorts']['created']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['sorts']['created']['field'] = 'created';
-  /* Contextual filter: Forum post: Tid */
+  /* Contextual filter: Forum forum_post: Tid */
   $handler->display->display_options['arguments']['tid']['id'] = 'tid';
-  $handler->display->display_options['arguments']['tid']['table'] = 'brain_forum_post';
+  $handler->display->display_options['arguments']['tid']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['arguments']['tid']['field'] = 'tid';
   $handler->display->display_options['arguments']['tid']['default_argument_type'] = 'fixed';
   $handler->display->display_options['arguments']['tid']['default_argument_skip_url'] = 0;
@@ -587,14 +587,14 @@ function brain_forum_views_default_views() {
   $handler->display->display_options['arguments']['tid']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['tid']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['tid']['not'] = 0;
-  /* Filter criterion: Forum post: Published or admin */
+  /* Filter criterion: Forum forum_post: Published or admin */
   $handler->display->display_options['filters']['status_extra']['id'] = 'status_extra';
-  $handler->display->display_options['filters']['status_extra']['table'] = 'brain_forum_post';
+  $handler->display->display_options['filters']['status_extra']['table'] = 'brain_forum_forum_post';
   $handler->display->display_options['filters']['status_extra']['field'] = 'status_extra';
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
-  $handler->display->display_options['display_description'] = 'Show all posts paged in a forum thread selected by contextual filter';
+  $handler->display->display_options['display_description'] = 'Show all forum_posts paged in a forum thread selected by contextual filter';
   $handler->display->display_options['path'] = 'forum/thread/%';
   $translatables['forum_thread'] = array(
     t('Master'),
@@ -617,7 +617,7 @@ function brain_forum_views_default_views() {
     t('quote'),
     t('All'),
     t('Page'),
-    t('Show all posts paged in a forum thread selected by contextual filter'),
+    t('Show all forum_posts paged in a forum thread selected by contextual filter'),
   );
   // End copy and paste of Export tab output.
 

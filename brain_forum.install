@@ -10,20 +10,20 @@
  * Implements hook_install().
  */
 function brain_forum_install() {
-  // Create a message field for forum posts.
+  // Create a message field for forum forum_posts.
   $field = array(
-    'field_name' => 'forum_post_message',
+    'field_name' => 'forum_forum_post_message',
     'type' => 'text_long',
     'cardinality' => 1,
     'translatable' => TRUE,
   );
   field_create_field($field);
 
-  // Attach message field to the forum post entity.
+  // Attach message field to the forum forum_post entity.
   $instance = array(
-    'entity_type' => 'post',
-    'field_name' => 'forum_post_message',
-    'bundle' => 'post',
+    'entity_type' => 'forum_post',
+    'field_name' => 'forum_forum_post_message',
+    'bundle' => 'forum_post',
     'label' => st('Message'),
     'widget' => array(
       'type' => 'text_textarea',
@@ -42,18 +42,17 @@ function brain_forum_install() {
   // hook modules_enabled is called which takes place after hook_enable events.
   field_associate_fields('taxonomy');
   // Create the forum vocabulary if it does not exist.
-  $vocabulary = taxonomy_vocabulary_load(variable_get('brain_forum_categories', 0));
+  $vocabulary = taxonomy_vocabulary_load(config_get('brain_forum.settings', 'brain_forum_categories'));
   if (!$vocabulary) {
-    $edit = array(
+    $vocabulary = new TaxonomyVocabulary(array(
       'name' => st('Forum categories'),
       'machine_name' => 'forum_categories',
       'description' => st('Forum categories'),
       'hierarchy' => 1,
       'module' => 'brain_forum',
-    );
-    $vocabulary = (object) $edit;
+    ));
     taxonomy_vocabulary_save($vocabulary);
-    variable_set('brain_forum_categories', $vocabulary->vid);
+    config_set('brain_forum.settings', 'brain_forum_categories', $vocabulary->machine_name);
   }
 
   // Create a taxonomy field for forum threads.
@@ -84,7 +83,7 @@ function brain_forum_install() {
   field_create_instance($instance);
 
   // Create a new text format for BBCode.
-  // This will be used for forum posts.
+  // This will be used for forum forum_posts.
   if (module_exists('bbcode') && !filter_format_exists('bbcode')) {
     $bbcode_format = array(
       'format' => 'bbcode',
@@ -116,22 +115,12 @@ function brain_forum_install() {
 function brain_forum_uninstall() {
   // Go through each of the fields defined by this module and delete
   // all instances of the field, their data, and the field itself.
-  // http://api.drupal.org/api/function/field_delete_field/7
-  field_delete_field('forum_post_message');
-  field_delete_field('forum_category');
-
-
-  // Loop over any remaining field instances attached to the post entity
-  // (any fields added via Fields UI) and delete them individually.
-  // http://api.drupal.org/api/function/field_delete_field/7
-  $instances = field_info_instances('post', 'post');
-  $instances = field_info_instances('thread', 'thread');
-  foreach ($instances as $instance_name => $instance) {
-    field_delete_instance($instance);
-  }
+  // http://api.backdrop.org/api/function/field_delete_field/7
+  // field_delete_field('forum_forum_post_message');
+  // field_delete_field('forum_category');
 
   // Purge all field infromation.
-  // http://api.drupal.org/api/function/field_purge_batch/7
+  // http://api.backdrop.org/api/function/field_purge_batch/7
   field_purge_batch(1000);
 
   // Remove the default views created by this module.
@@ -145,7 +134,7 @@ function brain_forum_uninstall() {
   }
 
   // Delete the forum vocabulary if it exists.
-  taxonomy_vocabulary_delete(variable_get('brain_forum_categories', 0));
+  //taxonomy_vocabulary_delete(config_get('brain_forum.settings', 'brain_forum_categories'));
 
 }
 
@@ -156,24 +145,24 @@ function brain_forum_uninstall() {
 function brain_forum_schema() {
   $schema = array();
 
-  $schema['brain_forum_post'] = array(
-    'description' => 'The base table for the post entity.',
+  $schema['brain_forum_forum_post'] = array(
+    'description' => 'The base table for the forum_post entity.',
       'fields' => array(
         'pid' => array(
-          'description' => 'Primary Key: Identifier for a post.',
+          'description' => 'Primary Key: Identifier for a forum_post.',
           'type' => 'serial',
           'unsigned' => TRUE,
           'not null' => TRUE,
         ),
         'tid' => array(
-          'description' => 'The {brain_forum_thread}.tid of the thread this post belongs to.',
+          'description' => 'The {brain_forum_thread}.tid of the thread this forum_post belongs to.',
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
         ),
         'is_first' => array(
-          'description' => 'If set to 1, the post is the first post in a thread.',
+          'description' => 'If set to 1, the forum_post is the first forum_post in a thread.',
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
@@ -181,46 +170,46 @@ function brain_forum_schema() {
           'size' => 'tiny',
         ),
         'title' => array(
-          'description' => 'The title of the post.',
+          'description' => 'The title of the forum_post.',
           'type' => 'varchar',
           'length' => 255,
           'default' => '',
         ),
         'uid' => array(
-          'description' => "The post author's {users}.uid. If set to 0, the post was created by an anonymous user.",
+          'description' => "The forum_post author's {users}.uid. If set to 0, the forum_post was created by an anonymous user.",
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
         ),
         'name' => array(
-          'description' => "The post author's name. Uses {users}.name if the user is logged in, otherwise uses the value typed into the post form.",
+          'description' => "The forum_post author's name. Uses {users}.name if the user is logged in, otherwise uses the value typed into the forum_post form.",
           'type' => 'varchar',
           'length' => 60,
           'not null' => TRUE,
           'default' => 'und',
         ),
         'ip' => array(
-          'description' => "The post author's IP address.",
+          'description' => "The forum_post author's IP address.",
           'type' => 'varchar',
           'length' => 20,
           'not null' => TRUE,
           'default' => 'und',
         ),
         'created' => array(
-          'description' => 'Unix timestamp when the post was created.',
+          'description' => 'Unix timestamp when the forum_post was created.',
           'type' => 'int',
           'not null' => TRUE,
           'default' => 0,
         ),
         'changed' => array(
-          'description' => 'Unix timestamp when the post was most recently saved.',
+          'description' => 'Unix timestamp when the forum_post was most recently saved.',
           'type' => 'int',
           'not null' => TRUE,
           'default' => 0,
         ),
         'status' => array(
-          'description' => 'The published status of the post. (0 = Not Published, 1 = Published)',
+          'description' => 'The published status of the forum_post. (0 = Not Published, 1 = Published)',
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
@@ -228,7 +217,7 @@ function brain_forum_schema() {
           'size' => 'tiny',
         ),
         'thread_status' => array(
-          'description' => 'The published status of the thread the post belongs to. (0 = Not Published, 1 = Published)',
+          'description' => 'The published status of the thread the forum_post belongs to. (0 = Not Published, 1 = Published)',
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
@@ -250,14 +239,14 @@ function brain_forum_schema() {
           'not null' => TRUE,
         ),
         'title' => array(
-          'description' => 'The title of the first post in the thread.',
+          'description' => 'The title of the first forum_post in the thread.',
           'type' => 'varchar',
           'length' => 255,
           'not null' => FALSE,
           'default' => '',
         ),
         'uid' => array(
-          'description' => "The thread starter's {users}.uid. If set to 0, the post was created by an anonymous user.",
+          'description' => "The thread starter's {users}.uid. If set to 0, the forum_post was created by an anonymous user.",
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
@@ -277,34 +266,34 @@ function brain_forum_schema() {
           'default' => 0,
         ),
         'last_pid' => array(
-          'description' => 'The {brain_forum_post}.pid of the last post in the thread.',
+          'description' => 'The {brain_forum_forum_post}.pid of the last forum_post in the thread.',
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
         ),
         'last_uid' => array(
-          'description' => 'The {users}.uid of the author of the last post in the thread.',
+          'description' => 'The {users}.uid of the author of the last forum_post in the thread.',
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
         ),
         'last_name' => array(
-          'description' => 'The name of hte author of the last post in the thread. Uses {users}.name if the user is logged in, otherwise uses the value typed into the post form.',
+          'description' => 'The name of hte author of the last forum_post in the thread. Uses {users}.name if the user is logged in, otherwise uses the value typed into the forum_post form.',
           'type' => 'varchar',
           'length' => 60,
           'not null' => TRUE,
           'default' => '',
         ),
         'last_time' => array(
-          'description' => 'Unix timestamp when the last post in the thread was created.',
+          'description' => 'Unix timestamp when the last forum_post in the thread was created.',
           'type' => 'int',
           'not null' => TRUE,
           'default' => 0,
         ),
-        'posts' => array(
-          'description' => 'Number of posts in the thread.',
+        'forum_posts' => array(
+          'description' => 'Number of forum_posts in the thread.',
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
@@ -338,64 +327,4 @@ function brain_forum_schema() {
   );
 
   return $schema;
-}
-
-/**
- * Add field thread_status to brain_forum_post table.
- */
-function brain_forum_update_7000() {
-  db_add_field('brain_forum_post', 'thread_status', array(
-    'description' => 'The published status of the thread. (0 = Not Published, 1 = Published)',
-    'type' => 'int',
-    'unsigned' => TRUE,
-    'not null' => TRUE,
-    'default' => 1,
-    'size' => 'tiny',
-  ));
-}
-
-/**
- * Set the value of brain_forum_post.thread_status for each post.
- */
-function brain_forum_update_7001(&$sandbox) {
-  // Update thread_status of all posts by fetching it from the thread table.
-  if (!isset($sandbox['progress'])) {
-    $sandbox['progress'] = 0;
-    $sandbox['current_pid'] = 0;
-    $sandbox['max'] = db_query('SELECT COUNT(DISTINCT pid) FROM {brain_forum_post}')->fetchField();
-  }
-
-  $posts = db_select('brain_forum_post', 'p')
-    ->fields('p', array('pid', 'tid', 'thread_status'))
-    ->condition('pid', $sandbox['current_pid'], '>')
-    ->range(0, 3)
-    ->orderBy('pid', 'ASC')
-    ->execute();
-
-  foreach ($posts as $post) {
-    $thread = db_select('brain_forum_thread', 't')
-      ->fields('t', array('tid', 'status'))
-      ->condition('tid', $post->tid, '=')
-      ->range(0, 1)
-      ->execute()
-      ->fetchAssoc();
-
-    $post->thread_status = $thread['status'];
-    db_update('brain_forum_post')
-      ->fields(array('thread_status' => $post->thread_status))
-      ->condition('pid', $post->pid)
-      ->execute();
-
-    $sandbox['progress']++;
-    $sandbox['current_pid'] = $post->pid;
-  }
-
-  $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
-
-  // To display a message to the user when the update is completed, return it.
-  // If you do not want to display a completion message, simply return nothing.
-  return t('The fields were successfully updated.');
-
-  // In case of an error, simply throw an exception with an error message.
-  throw new DrupalUpdateException('Something went wrong.');
 }

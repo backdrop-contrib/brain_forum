@@ -3,10 +3,10 @@
 /**
  * @file
  * Contains a Views field handler to take care of displaying edit links to
- * forum posts as fields.
+ * forum forum_posts as fields.
  */
 
-class brain_forum_post_handler_edit_field extends views_handler_field {
+class brain_forum_forum_post_handler_edit_field extends views_handler_field {
   function construct() {
     parent::construct();
   }
@@ -42,14 +42,14 @@ class brain_forum_post_handler_edit_field extends views_handler_field {
     $text = !empty($this->options['text']) ? $this->options['text'] : t('edit');
 
     $pid = $values->pid;
-    $destination = drupal_get_destination();
+    $destination = backdrop_get_destination();
 
     // Build the edit link.
     // @todo Replace hardcoded path with dynamically fetched one.
-    $return = l($text, 'forum/post/' . $pid . '/edit', array('query' => array('destination' => $destination['destination'])));
+    $return = l($text, 'forum/forum_post/' . $pid . '/edit', array('query' => array('destination' => $destination['destination'])));
 
-    // Return link only if user has permission to edit posts
-    if (user_access('edit forum posts')) {
+    // Return link only if user has permission to edit forum_posts
+    if (user_access('edit forum forum_posts')) {
       return $return;
     }
   }
